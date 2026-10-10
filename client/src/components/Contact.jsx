@@ -1,33 +1,46 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useRef, useState } from "react";
+import { gsap, useGSAP, MOTION_OK } from "../lib/gsap";
 import { profile } from "../data/profile";
+import { scrollToHash } from "../lib/scroll";
+import { apiUrl } from "../lib/api";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+const initialForm = { name: "", email: "", message: "", website: "" }; // website = honeypot
 
-const initialForm = { name: "", email: "", message: "" };
+const fieldClass =
+  "w-full bg-transparent border-0 border-b border-paper/50 py-2.5 text-paper placeholder:text-paper/50 focus:border-marker focus:outline-none transition-colors";
 
 export default function Contact() {
+  const root = useRef(null);
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState("idle"); // idle | sending | sent | error
   const [errorMsg, setErrorMsg] = useState("");
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  // Answer the action: the confirmation lands like a stamp.
+  useGSAP(
+    () => {
+      if (status !== "sent") return;
+      const mm = gsap.matchMedia();
+      mm.add(MOTION_OK, () => {
+        gsap.from("[data-stamp]", { scale: 1.6, rotate: -8, opacity: 0, duration: 0.45, ease: "power4.out" });
+      });
+    },
+    { dependencies: [status], scope: root }
+  );
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setStatus("sending");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      if (!res.ok) throw new Error(data.error || "The message could not be sent. Please try again.");
       setStatus("sent");
       setForm(initialForm);
     } catch (err) {
@@ -36,129 +49,131 @@ export default function Contact() {
     }
   };
 
+  const block = [
+    { term: "Drawn by", detail: profile.name },
+    { term: "Based in", detail: profile.location },
+    { term: "Phone", detail: profile.phone, href: `tel:${profile.phone.replace(/\s/g, "")}` },
+    { term: "Email", detail: profile.email, href: `mailto:${profile.email}` },
+    { term: "GitHub", detail: profile.socials.github.replace("https://", ""), href: profile.socials.github },
+  ];
+
   return (
-    <section id="contact" className="section-pad">
-      <div className="max-w-6xl mx-auto px-6">
-        <motion.p
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="font-mono text-accent text-sm mb-3 text-center"
-        >
-          06 — Contact
-        </motion.p>
-        <motion.h2
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-3xl sm:text-4xl font-bold mb-4 text-center"
-        >
-          Let's build something.
-        </motion.h2>
-        <motion.p
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-muted text-center max-w-xl mx-auto mb-12"
-        >
-          Have a project in mind, or just want to say hi? My inbox is open.
-        </motion.p>
+    <section ref={root} id="contact" data-sheet className="bg-sheet text-paper pt-20 sm:pt-28">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid md:grid-cols-12 gap-x-10 gap-y-10">
+          <div className="md:col-span-5">
+            <h2 className="display text-4xl sm:text-5xl md:text-6xl">Have a project in mind?</h2>
+            <p className="prose-serif mt-6 text-lg text-paper/85 max-w-[30rem]">
+              Tell me what you want to build and send it here, or write to me directly at the address below.
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-5 gap-10 max-w-4xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="md:col-span-2 space-y-6"
-          >
-            <div>
-              <p className="text-xs font-mono text-muted uppercase tracking-wide mb-1">Email</p>
-              <a href={`mailto:${profile.email}`} className="text-text hover:text-accent transition-colors">
-                {profile.email}
-              </a>
+          <form onSubmit={onSubmit} className="md:col-span-7 space-y-6" noValidate={false}>
+            {/* Honeypot: hidden from people and assistive tech; bots tend to fill it in. */}
+            <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+              <label htmlFor="website">Leave this field empty</label>
+              <input
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={onChange}
+              />
             </div>
             <div>
-              <p className="text-xs font-mono text-muted uppercase tracking-wide mb-1">Phone</p>
-              <a href={`tel:${profile.phone.replace(/\s/g, "")}`} className="text-text hover:text-accent transition-colors">
-                {profile.phone}
-              </a>
-            </div>
-            <div>
-              <p className="text-xs font-mono text-muted uppercase tracking-wide mb-1">Location</p>
-              <p className="text-text">{profile.location}</p>
-            </div>
-          </motion.div>
-
-          <motion.form
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            onSubmit={onSubmit}
-            className="md:col-span-3 space-y-4"
-          >
-            <div>
-              <label htmlFor="name" className="block text-xs font-mono text-muted uppercase tracking-wide mb-2">
-                Name
+              <label htmlFor="name" className="block text-sm font-medium text-paper/80">
+                Your name
               </label>
               <input
                 id="name"
                 name="name"
                 required
+                autoComplete="name"
                 value={form.name}
                 onChange={onChange}
-                className="w-full rounded-lg bg-surface-2 border border-border px-4 py-2.5 text-text outline-none focus:border-accent transition-colors"
-                placeholder="Your name"
+                className={fieldClass}
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-xs font-mono text-muted uppercase tracking-wide mb-2">
-                Email
+              <label htmlFor="email" className="block text-sm font-medium text-paper/80">
+                Your email
               </label>
               <input
                 id="email"
                 type="email"
                 name="email"
                 required
+                autoComplete="email"
                 value={form.email}
                 onChange={onChange}
-                className="w-full rounded-lg bg-surface-2 border border-border px-4 py-2.5 text-text outline-none focus:border-accent transition-colors"
-                placeholder="you@example.com"
+                className={fieldClass}
               />
             </div>
             <div>
-              <label htmlFor="message" className="block text-xs font-mono text-muted uppercase tracking-wide mb-2">
-                Message
+              <label htmlFor="message" className="block text-sm font-medium text-paper/80">
+                What are you building?
               </label>
               <textarea
                 id="message"
                 name="message"
                 required
-                rows={5}
+                rows={4}
                 value={form.message}
                 onChange={onChange}
-                className="w-full rounded-lg bg-surface-2 border border-border px-4 py-2.5 text-text outline-none focus:border-accent transition-colors resize-none"
-                placeholder="Tell me about your project..."
+                className={`${fieldClass} resize-none`}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className="w-full rounded-lg bg-accent text-[#04120c] font-semibold py-3 hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {status === "sending" ? "Sending..." : "Send Message"}
-            </button>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+              <button
+                type="submit"
+                disabled={status === "sending"}
+                className="bg-marker text-ink font-semibold px-7 py-3 transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {status === "sending" ? "Sending..." : "Send message"}
+              </button>
 
-            {status === "sent" && (
-              <p className="text-accent text-sm">Thanks — your message has been sent.</p>
-            )}
-            {status === "error" && <p className="text-red-400 text-sm">{errorMsg}</p>}
-          </motion.form>
+              <p role="status" className="min-h-[1.5rem]">
+                {status === "sent" && (
+                  <span data-stamp className="inline-block border-2 border-marker text-marker font-bold px-3 py-1">
+                    Message sent
+                  </span>
+                )}
+                {status === "error" && <span className="font-medium">{errorMsg}</span>}
+              </p>
+            </div>
+          </form>
+        </div>
+
+        {/* Title block, as on a drawing sheet. */}
+        <dl className="mt-20 grid grid-cols-2 lg:grid-cols-5 gap-px border border-paper/50 bg-paper/50">
+          {block.map((b, i) => (
+            <div
+              key={b.term}
+              className={`bg-sheet p-4 ${i === block.length - 1 ? "col-span-2 lg:col-span-1" : ""}`}
+            >
+              <dt className="text-sm text-paper/70">{b.term}</dt>
+              <dd className="mt-1 font-semibold break-words">
+                {b.href ? (
+                  <a href={b.href} className="mark-link">
+                    {b.detail}
+                  </a>
+                ) : (
+                  b.detail
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 py-8 text-sm text-paper/80">
+          <p>
+            © {new Date().getFullYear()} {profile.name}
+          </p>
+          <button onClick={() => scrollToHash("#top")} className="mark-link font-semibold">
+            Back to top
+          </button>
         </div>
       </div>
     </section>

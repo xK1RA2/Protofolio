@@ -6,11 +6,16 @@ import Experience from "./components/Experience";
 import Projects from "./components/Projects";
 import Education from "./components/Education";
 import Contact from "./components/Contact";
-import Footer from "./components/Footer";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="min-h-screen bg-paper text-ink">
+      <a
+        href="#about"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-marker focus:text-ink focus:px-4 focus:py-2 font-semibold"
+      >
+        Skip to content
+      </a>
       <Navbar />
       <main>
         <Hero />
@@ -21,7 +26,6 @@ export default function App() {
         <Education />
         <Contact />
       </main>
-      <Footer />
     </div>
   );
 }

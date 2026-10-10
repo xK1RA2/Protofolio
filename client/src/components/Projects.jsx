@@ -1,76 +1,41 @@
-import { motion } from "framer-motion";
 import { projects } from "../data/profile";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+import Section from "./Section";
 
 export default function Projects() {
   return (
-    <section id="projects" className="section-pad bg-surface/40 border-y border-border">
-      <div className="max-w-6xl mx-auto px-6">
-        <motion.p
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="font-mono text-accent text-sm mb-3"
-        >
-          04 — Projects
-        </motion.p>
-        <motion.h2
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-3xl sm:text-4xl font-bold mb-2"
-        >
-          Selected work.
-        </motion.h2>
-        <motion.p
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="text-muted mb-12"
-        >
-          Replace these placeholder cards in{" "}
-          <code className="text-accent font-mono text-sm">src/data/profile.js</code> with real projects.
-        </motion.p>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((p, i) => (
-            <motion.div
-              key={p.title + i}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              transition={{ delay: i * 0.1 }}
-              className="card p-6 flex flex-col group hover:border-accent/50 transition-colors"
-            >
-              {p.placeholder && (
-                <span className="text-xs font-mono text-accent-2 mb-3 uppercase tracking-wide">
-                  Placeholder
-                </span>
+    <Section id="projects" title="Projects">
+      <div className="ledger">
+        {projects.map((p) => (
+          <article key={p.title} className="grid sm:grid-cols-3 gap-x-6 gap-y-5 py-7">
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight">{p.title}</h3>
+              <p className="mt-1 text-graphite font-medium">{p.kind}</p>
+              {p.link && (
+                <a href={p.link} target="_blank" rel="noreferrer" className="mark-link mt-4 inline-block font-semibold">
+                  {p.linkLabel}
+                </a>
               )}
-              <h3 className="text-lg font-semibold text-text mb-2">{p.title}</h3>
-              <p className="text-muted text-sm leading-relaxed flex-1">{p.description}</p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {p.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-surface-2 border border-border px-2.5 py-1 text-xs text-muted"
+            </div>
+
+            <div className="sm:col-span-2">
+              <dl className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                <dt className="font-semibold">Stack</dt>
+                <dd className="text-graphite font-medium">{p.stack.join(", ")}</dd>
+              </dl>
+              <ul className="prose-serif mt-5 space-y-3 text-lg max-w-[62ch]">
+                {p.bullets.map((b) => (
+                  <li
+                    key={b}
+                    className="pl-5 relative before:absolute before:left-0 before:top-[0.8em] before:h-px before:w-3 before:bg-ink"
                   >
-                    {t}
-                  </span>
+                    {b}
+                  </li>
                 ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </ul>
+            </div>
+          </article>
+        ))}
       </div>
-    </section>
+    </Section>
   );
 }

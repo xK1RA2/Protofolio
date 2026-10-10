@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { gsap, ScrollTrigger, useGSAP, MOTION_OK } from "../lib/gsap";
 import { profile } from "../data/profile";
+import { scrollToHash } from "../lib/scroll";
 
 const links = [
   { href: "#about", label: "About" },
@@ -11,64 +13,98 @@ const links = [
 ];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const root = useRef(null);
+  const menu = useRef(null);
+  const [onSheet, setOnSheet] = useState(true); // header currently sits over a dark sheet
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState("");
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // Header colours follow whichever sheet is under it; the active link follows the
+  // section crossing the middle of the viewport.
+  useGSAP(
+    () => {
+      ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        onUpdate() {
+          const probe = 36;
+          const sheet = [...document.querySelectorAll("[data-sheet]")].some((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top <= probe && r.bottom > probe;
+          });
+          setOnSheet(sheet);
+
+          const mid = window.innerHeight / 2;
+          const current = links.find(({ href }) => {
+            const r = document.querySelector(href)?.getBoundingClientRect();
+            return r && r.top <= mid && r.bottom > mid;
+          });
+          setActive(current ? current.href : "");
+        },
+      });
+    },
+    { scope: root }
+  );
+
+  // Mobile menu items cascade in when it opens.
+  useGSAP(
+    () => {
+      if (!open || !menu.current) return;
+      const mm = gsap.matchMedia();
+      mm.add(MOTION_OK, () => {
+        gsap.from(menu.current.children, { y: -10, opacity: 0, duration: 0.35, stagger: 0.04, ease: "power3.out" });
+      });
+    },
+    { dependencies: [open], scope: root }
+  );
+
+  const go = (e, hash) => {
+    e.preventDefault();
+    setOpen(false);
+    scrollToHash(hash);
+  };
+
+  const surface = onSheet && !open ? "text-paper" : "bg-paper/95 text-ink backdrop-blur border-b border-ink/15";
+  const linkBase = "px-2 py-1 transition-colors";
+  const linkOn = "bg-marker text-ink";
 
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all ${
-        scrolled ? "bg-bg/80 backdrop-blur-md border-b border-border" : "bg-transparent"
-      }`}
-    >
-      <nav className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <a href="#top" className="font-mono text-sm tracking-tight text-text">
-          <span className="text-accent">&lt;</span>
-          {profile.name.split(" ")[0]}
-          <span className="text-accent">/&gt;</span>
+    <header ref={root} className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${surface}`}>
+      <nav className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4" aria-label="Main">
+        <a href="#top" onClick={(e) => go(e, "#top")} className="font-semibold tracking-tight">
+          {profile.name}
         </a>
 
-        <ul className="hidden md:flex items-center gap-8 text-sm text-muted">
+        <ul className="hidden md:flex items-center gap-4 text-sm font-medium">
           {links.map((l) => (
             <li key={l.href}>
-              <a href={l.href} className="hover:text-text transition-colors">
+              <a
+                href={l.href}
+                onClick={(e) => go(e, l.href)}
+                aria-current={active === l.href ? "true" : undefined}
+                className={`${linkBase} ${active === l.href ? linkOn : "hover:bg-marker hover:text-ink"}`}
+              >
                 {l.label}
               </a>
             </li>
           ))}
         </ul>
 
-        <a
-          href="#contact"
-          className="hidden md:inline-flex items-center rounded-full border border-border px-4 py-1.5 text-sm text-text hover:border-accent hover:text-accent transition-colors"
-        >
-          Let's talk
-        </a>
-
         <button
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden text-text p-2"
-          aria-label="Toggle menu"
+          className="md:hidden p-2 -mr-2 font-semibold text-sm"
+          aria-expanded={open}
+          aria-controls="mobile-menu"
         >
-          <div className="w-6 h-0.5 bg-current mb-1.5" />
-          <div className="w-6 h-0.5 bg-current" />
+          {open ? "Close" : "Menu"}
         </button>
       </nav>
 
       {open && (
-        <ul className="md:hidden flex flex-col gap-1 px-6 pb-4 bg-bg/95 backdrop-blur-md border-b border-border">
+        <ul id="mobile-menu" ref={menu} className="md:hidden flex flex-col px-6 pb-4 text-lg font-medium">
           {links.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="block py-2 text-muted hover:text-text"
-              >
+            <li key={l.href} className="border-t border-ink/15">
+              <a href={l.href} onClick={(e) => go(e, l.href)} className="block py-3">
                 {l.label}
               </a>
             </li>
