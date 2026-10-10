@@ -80,20 +80,23 @@ bullets, link). Add another object to that array to add another project.
   `CLIENT_ORIGIN` to your deployed frontend URL (CORS; comma-separate multiple),
   `DATABASE_URL`, and `ADMIN_PASSWORD`.
 
-### Deploying the backend to Fly.io
+### Deploying everything to Fly.io (one app)
 
-`fly.toml` and `server/Dockerfile` are already in the repo. From the repository root:
+The Docker image builds the React site and serves it from the same Express app as the API, so
+there is a single URL, no CORS setup and no separate frontend host. `fly.toml` and
+`server/Dockerfile` are in the repo. From the repository root:
 
 ```bash
 fly launch --no-deploy --copy-config      # accept fly.toml; change the app name if it is taken
-fly secrets set   ADMIN_PASSWORD="a-long-password"   DATABASE_URL="postgres://..."   CLIENT_ORIGIN="https://your-site.example"
+fly secrets set   ADMIN_PASSWORD="a-long-password"   DATABASE_URL="postgres://..."
 fly deploy
 ```
 
-Use a hosted PostgreSQL for `DATABASE_URL` (Fly Postgres, Neon, Supabase). Without it the server
-falls back to a SQLite file on the machine, which Fly wipes on every deploy unless you attach a
-volume. Optional SMTP settings (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `CONTACT_TO_EMAIL`) go in
-as secrets too.
+Your site is then at `https://<app>.fly.dev`, the inbox at `/admin`, the API under `/api`.
+Use a hosted PostgreSQL for `DATABASE_URL` (Fly Postgres, Neon, Supabase); without it the server
+falls back to a SQLite file that Fly wipes on every deploy. Optional SMTP settings
+(`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `CONTACT_TO_EMAIL`) go in as secrets too. If you later host
+the frontend somewhere else, build it with `VITE_API_URL` and set `CLIENT_ORIGIN` on the API.
 
 ## Tech stack
 

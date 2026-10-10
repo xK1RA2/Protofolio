@@ -2,6 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import contactRouter from "./routes/contact.js";
 import adminRouter from "./routes/admin.js";
 import { initDb } from "./lib/db.js";
@@ -22,6 +25,16 @@ app.use(express.json({ limit: "20kb" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/contact", contactRouter);
 app.use("/api/admin", adminRouter);
+
+// Serve the built website (the Docker image puts it in ./public). In plain local dev the
+// folder does not exist and Vite serves the frontend instead.
+const publicDir = process.env.PUBLIC_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), "public");
+if (fs.existsSync(path.join(publicDir, "index.html"))) {
+  app.use(express.static(publicDir, { index: false, maxAge: "1h" }));
+  // Single-page app: any non-API GET for a page (e.g. /admin) returns index.html.
+  // Paths that look like files (have an extension) fall through to a real 404.
+  app.get(/^(?!\/api(\/|$))(?!.*\.[A-Za-z0-9]+$).*/, (_req, res) => res.sendFile(path.join(publicDir, "index.html")));
+}
 
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
 
