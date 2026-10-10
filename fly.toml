@@ -1,30 +1,32 @@
-# Fly.io config for the API (server/). The frontend is a static site and is deployed elsewhere.
-# Secrets are NOT stored here; set them with `fly secrets set` (see README).
+# fly.toml app configuration file generated for protofolio on 2026-10-10T20:00:27Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "mohamad-portfolio-api"   # must be globally unique on Fly; rename if it is taken
-primary_region = "fra"
+app = 'protofolio'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "server/Dockerfile"
+  dockerfile = 'server/Dockerfile'
 
 [env]
-  PORT = "8080"
-  NODE_ENV = "production"
+  NODE_ENV = 'production'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[http_service.checks]]
-    method = "GET"
-    path = "/api/health"
-    interval = "30s"
-    timeout = "5s"
-    grace_period = "10s"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/api/health'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
