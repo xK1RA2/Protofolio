@@ -1,0 +1,30 @@
+# Fly.io config for the API (server/). The frontend is a static site and is deployed elsewhere.
+# Secrets are NOT stored here; set them with `fly secrets set` (see README).
+
+app = "mohamad-portfolio-api"   # must be globally unique on Fly; rename if it is taken
+primary_region = "fra"
+
+[build]
+  dockerfile = "server/Dockerfile"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

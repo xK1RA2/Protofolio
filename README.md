@@ -80,6 +80,21 @@ bullets, link). Add another object to that array to add another project.
   `CLIENT_ORIGIN` to your deployed frontend URL (CORS; comma-separate multiple),
   `DATABASE_URL`, and `ADMIN_PASSWORD`.
 
+### Deploying the backend to Fly.io
+
+`fly.toml` and `server/Dockerfile` are already in the repo. From the repository root:
+
+```bash
+fly launch --no-deploy --copy-config      # accept fly.toml; change the app name if it is taken
+fly secrets set   ADMIN_PASSWORD="a-long-password"   DATABASE_URL="postgres://..."   CLIENT_ORIGIN="https://your-site.example"
+fly deploy
+```
+
+Use a hosted PostgreSQL for `DATABASE_URL` (Fly Postgres, Neon, Supabase). Without it the server
+falls back to a SQLite file on the machine, which Fly wipes on every deploy unless you attach a
+volume. Optional SMTP settings (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `CONTACT_TO_EMAIL`) go in
+as secrets too.
+
 ## Tech stack
 
 - **Frontend**: React 19, Vite, Tailwind CSS v4, GSAP (ScrollTrigger, SplitText, ScrollToPlugin)
